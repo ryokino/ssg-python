@@ -1,0 +1,15 @@
+[project]
+name = "static-site-genearator-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.pyright]
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
+executionEnvironments = [
+  { root = "src" }
+]
