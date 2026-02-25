@@ -9,8 +9,17 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             new_nodes.append(node)
         else:
             parts = node.text.split(delimiter)
-            for part in parts:
-                new_nodes.append(TextNode(part, text_type))
+            if len(parts) % 2 == 0:
+                raise ValueError(
+                    f"Invalid markdown: missing closing delimiter '{delimiter}'"
+                )
+            for i, part in enumerate(parts):
+                if part == "":
+                    continue
+                if i % 2 == 0:
+                    new_nodes.append(TextNode(part, TextType.TEXT))
+                else:
+                    new_nodes.append(TextNode(part, text_type))
     return new_nodes
 
 

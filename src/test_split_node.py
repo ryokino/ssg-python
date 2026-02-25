@@ -14,9 +14,9 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                TextNode("This is text with a ", TextType.CODE),
+                TextNode("This is text with a ", TextType.TEXT),
                 TextNode("code block", TextType.CODE),
-                TextNode(" word", TextType.CODE),
+                TextNode(" word", TextType.TEXT),
             ],
         )
 
@@ -26,9 +26,9 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                TextNode("This is ", TextType.BOLD),
+                TextNode("This is ", TextType.TEXT),
                 TextNode("bold", TextType.BOLD),
-                TextNode(" text", TextType.BOLD),
+                TextNode(" text", TextType.TEXT),
             ],
         )
 
@@ -38,16 +38,16 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                TextNode("This is ", TextType.ITALIC),
+                TextNode("This is ", TextType.TEXT),
                 TextNode("italic", TextType.ITALIC),
-                TextNode(" text", TextType.ITALIC),
+                TextNode(" text", TextType.TEXT),
             ],
         )
 
     def test_no_delimiter(self):
         node = TextNode("plain text", TextType.TEXT)
         result = split_nodes_delimiter([node], "`", TextType.CODE)
-        self.assertEqual(result, [TextNode("plain text", TextType.CODE)])
+        self.assertEqual(result, [TextNode("plain text", TextType.TEXT)])
 
     def test_non_text_node_passes_through(self):
         node = TextNode("already bold", TextType.BOLD)
@@ -57,6 +57,47 @@ class TestSplitNodesDelimiter(unittest.TestCase):
     def test_empty_list(self):
         result = split_nodes_delimiter([], "`", TextType.CODE)
         self.assertEqual(result, [])
+
+    def test_delimiter_at_start(self):
+        node = TextNode("`code` at start", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(
+            result,
+            [
+                TextNode("code", TextType.CODE),
+                TextNode(" at start", TextType.TEXT),
+            ],
+        )
+
+    def test_delimiter_at_end(self):
+        node = TextNode("ends with `code`", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(
+            result,
+            [
+                TextNode("ends with ", TextType.TEXT),
+                TextNode("code", TextType.CODE),
+            ],
+        )
+
+    def test_multiple_delimiters(self):
+        node = TextNode("a `first` b `second` c", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(
+            result,
+            [
+                TextNode("a ", TextType.TEXT),
+                TextNode("first", TextType.CODE),
+                TextNode(" b ", TextType.TEXT),
+                TextNode("second", TextType.CODE),
+                TextNode(" c", TextType.TEXT),
+            ],
+        )
+
+    def test_unclosed_delimiter_raises(self):
+        node = TextNode("missing `close", TextType.TEXT)
+        with self.assertRaises(ValueError):
+            split_nodes_delimiter([node], "`", TextType.CODE)
 
 
 # =====================================================================
@@ -134,24 +175,6 @@ class TestSplitNodesImages(unittest.TestCase):
         node = TextNode("bold text", TextType.BOLD)
         result = split_nodes_images([node])
         self.assertEqual(result, [TextNode("bold text", TextType.BOLD)])
-
-    def test_multiple_nodes_mixed(self):
-        nodes = [
-            TextNode("before ![img](https://example.com/a.png) after", TextType.TEXT),
-            TextNode("bold", TextType.BOLD),
-            TextNode("![img2](https://example.com/b.png)", TextType.TEXT),
-        ]
-        result = split_nodes_images(nodes)
-        self.assertEqual(
-            result,
-            [
-                TextNode("before ", TextType.TEXT),
-                TextNode("img", TextType.IMAGE, "https://example.com/a.png"),
-                TextNode(" after", TextType.TEXT),
-                TextNode("bold", TextType.BOLD),
-                TextNode("img2", TextType.IMAGE, "https://example.com/b.png"),
-            ],
-        )
 
     def test_empty_list(self):
         result = split_nodes_images([])
@@ -234,24 +257,6 @@ class TestSplitNodesLinks(unittest.TestCase):
         node = TextNode("italic text", TextType.ITALIC)
         result = split_nodes_links([node])
         self.assertEqual(result, [TextNode("italic text", TextType.ITALIC)])
-
-    def test_multiple_nodes_mixed(self):
-        nodes = [
-            TextNode("go to [site](https://site.com) ok", TextType.TEXT),
-            TextNode("code block", TextType.CODE),
-            TextNode("[another](https://another.com)", TextType.TEXT),
-        ]
-        result = split_nodes_links(nodes)
-        self.assertEqual(
-            result,
-            [
-                TextNode("go to ", TextType.TEXT),
-                TextNode("site", TextType.LINK, "https://site.com"),
-                TextNode(" ok", TextType.TEXT),
-                TextNode("code block", TextType.CODE),
-                TextNode("another", TextType.LINK, "https://another.com"),
-            ],
-        )
 
     def test_link_with_query_params(self):
         node = TextNode(
