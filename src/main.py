@@ -1,9 +1,10 @@
-from textnode import TextNode
+from copystatic import copy_files_recursive
+from generate_page import generate_page
 
 
 def main():
-    text_node = TextNode("This is some anchor text", "link", "https://www.boot.dev")  # noqa: F821
-    print(text_node)
+    copy_files_recursive("static", "public")
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 
 if __name__ == "__main__":
