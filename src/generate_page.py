@@ -1,35 +1,46 @@
 import os
-from markdown_to_html import markdown_to_html_node
-from extract_title import extract_title
+from markdown_to_blocks import markdown_to_html_node
 
 
 def generate_page(from_path, template_path, dest_path):
-    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    print(f" * {from_path} {template_path} -> {dest_path}")
+    from_file = open(from_path, "r")
+    markdown_content = from_file.read()
+    from_file.close()
 
-    # マークダウンファイルを読み込む
-    with open(from_path, "r") as f:
-        markdown_content = f.read()
+    template_file = open(template_path, "r")
+    template = template_file.read()
+    template_file.close()
 
-    # テンプレートファイルを読み込む
-    with open(template_path, "r") as f:
-        template_content = f.read()
+    node = markdown_to_html_node(markdown_content)
+    html = node.to_html()
 
-    # マークダウンをHTML文字列に変換
-    html_node = markdown_to_html_node(markdown_content)
-    html_content = html_node.to_html()
-
-    # タイトルを取得
     title = extract_title(markdown_content)
+    template = template.replace("{{ Title }}", title)
+    template = template.replace("{{ Content }}", html)
 
-    # テンプレートのプレースホルダーを置き換え
-    full_html = template_content.replace("{{ Title }}", title)
-    full_html = full_html.replace("{{ Content }}", html_content)
+    dest_dir_path = os.path.dirname(dest_path)
+    if dest_dir_path != "":
+        os.makedirs(dest_dir_path, exist_ok=True)
+    to_file = open(dest_path, "w")
+    to_file.write(template)
 
-    # 必要なディレクトリを作成
-    dest_dir = os.path.dirname(dest_path)
-    if dest_dir:
-        os.makedirs(dest_dir, exist_ok=True)
 
-    # HTMLファイルを書き込む
-    with open(dest_path, "w") as f:
-        f.write(full_html)
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    for filename in os.listdir(dir_path_content):
+        from_path = os.path.join(dir_path_content, filename)
+        dest_path = os.path.join(dest_dir_path, filename)
+        if os.path.isfile(from_path):
+            if from_path.endswith(".md"):
+                dest_path = dest_path.replace(".md", ".html")
+                generate_page(from_path, template_path, dest_path)
+        else:
+            generate_pages_recursive(from_path, template_path, dest_path)
+
+
+def extract_title(md):
+    lines = md.split("\n")
+    for line in lines:
+        if line.startswith("# "):
+            return line[2:]
+    raise ValueError("no title found")

@@ -1,6 +1,3 @@
-from textnode import TextNode, TextType
-
-
 class HTMLNode:
     def __init__(self, tag=None, value=None, children=None, props=None):
         self.tag = tag
@@ -9,18 +6,18 @@ class HTMLNode:
         self.props = props
 
     def to_html(self):
-        raise NotImplementedError("Children must be implemented")
+        raise NotImplementedError("to_html method not implemented")
 
     def props_to_html(self):
-        if self.props is None or self.props == {}:
+        if self.props is None:
             return ""
         props_html = ""
-        for key, value in self.props.items():
-            props_html += f' {key}="{value}"'
+        for prop in self.props:
+            props_html += f' {prop}="{self.props[prop]}"'
         return props_html
 
     def __repr__(self):
-        return f"HTMLNode({self.tag}, {self.value}, {self.children}, {self.props})"
+        return f"HTMLNode({self.tag}, {self.value}, children: {self.children}, {self.props})"
 
 
 class LeafNode(HTMLNode):
@@ -29,7 +26,7 @@ class LeafNode(HTMLNode):
 
     def to_html(self):
         if self.value is None:
-            raise ValueError("Value must be provided for LeafNode")
+            raise ValueError("invalid HTML: no value")
         if self.tag is None:
             return self.value
         return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
@@ -44,29 +41,13 @@ class ParentNode(HTMLNode):
 
     def to_html(self):
         if self.tag is None:
-            raise ValueError("Tag must be provided for ParentNode")
+            raise ValueError("invalid HTML: no tag")
         if self.children is None:
-            raise ValueError("Children must be provided for ParentNode")
+            raise ValueError("invalid HTML: no children")
         children_html = ""
         for child in self.children:
             children_html += child.to_html()
         return f"<{self.tag}{self.props_to_html()}>{children_html}</{self.tag}>"
 
     def __repr__(self):
-        return f"ParentNode({self.tag}, {self.children}, {self.props})"
-
-
-def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
-    if text_node.text_type == TextType.TEXT:
-        return LeafNode(None, text_node.text)
-    if text_node.text_type == TextType.BOLD:
-        return LeafNode("b", text_node.text)
-    if text_node.text_type == TextType.ITALIC:
-        return LeafNode("i", text_node.text)
-    if text_node.text_type == TextType.CODE:
-        return LeafNode("code", text_node.text)
-    if text_node.text_type == TextType.LINK:
-        return LeafNode("a", text_node.text, {"href": text_node.url})
-    if text_node.text_type == TextType.IMAGE:
-        return LeafNode("img", text_node.text, {"src": text_node.url})
-    raise ValueError(f"Unknown text type: {text_node.text_type}")
+        return f"ParentNode({self.tag}, children: {self.children}, {self.props})"
